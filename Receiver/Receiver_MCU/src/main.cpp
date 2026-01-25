@@ -35,15 +35,10 @@ imuReadings imuData;
 void receivedStatus(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&imuData, incomingData, sizeof(imuData)); //copy raw bytes into struct format
   
-  // printing 6 values
-  // Serial.printf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f\n",
-  //               imuData.acc_x, imuData.acc_y, imuData.acc_z,
-  //               imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
-  // Converting data to JSON string:
-  string jsonData = "{\"imuData\": {\"acc_x\": "+imuData.acc_x+", \"acc_y\": "+imuData.acc_y+", \"acc_z\": "+imuData.acc_y+ \
-                    ", \"gyr_X\": "+imuData.gyr_x+", \"gyr_y\": "+imuData.gyr_y+", \"gyr_z\": "+imuData.gyr_z+"}}";
-  // print JSON to COM 5 port:
-  Serial.println(jsonData);
+  // printing 6 values inJSON object format
+  Serial.println("{\"imuData\": {\"acc_x\": %.2f, \"acc_y\": %.2f, \"acc_z\": %.2f, \"gyr_X\": %.2f, \"gyr_y\": %.2f, \"gyr_z\": %.2f}}",
+                imuData.acc_x, imuData.acc_y, imuData.acc_z,
+                imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
 }
  
 void setup() {
