@@ -20,6 +20,7 @@ void loop(){
 */
 #include <esp_now.h>
 #include <WiFi.h>
+#include <string>
 
 // structure matches transmitter
 typedef struct imuReadings {
@@ -35,9 +36,14 @@ void receivedStatus(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&imuData, incomingData, sizeof(imuData)); //copy raw bytes into struct format
   
   // printing 6 values
-  Serial.printf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f\n",
-                imuData.acc_x, imuData.acc_y, imuData.acc_z,
-                imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
+  // Serial.printf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f\n",
+  //               imuData.acc_x, imuData.acc_y, imuData.acc_z,
+  //               imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
+  // Converting data to JSON string:
+  string jsonData = "{\"imuData\": {\"acc_x\": "+imuData.acc_x+", \"acc_y\": "+imuData.acc_y+", \"acc_z\": "+imuData.acc_y+ \
+                    ", \"gyr_X\": "+imuData.gyr_x+", \"gyr_y\": "+imuData.gyr_y+", \"gyr_z\": "+imuData.gyr_z+"}}";
+  // print JSON to COM 5 port:
+  Serial.println(jsonData);
 }
  
 void setup() {
