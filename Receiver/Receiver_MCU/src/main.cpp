@@ -36,7 +36,7 @@ void receivedStatus(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&imuData, incomingData, sizeof(imuData)); //copy raw bytes into struct format
   
   // printing 6 values inJSON object format
-  Serial.println("{\"imuData\": {\"acc_x\": %.2f, \"acc_y\": %.2f, \"acc_z\": %.2f, \"gyr_X\": %.2f, \"gyr_y\": %.2f, \"gyr_z\": %.2f}}",
+  Serial.printf("{\"imuData\": {\"acc_x\": %.2f, \"acc_y\": %.2f, \"acc_z\": %.2f, \"gyr_X\": %.2f, \"gyr_y\": %.2f, \"gyr_z\": %.2f}}\r\n",
                 imuData.acc_x, imuData.acc_y, imuData.acc_z,
                 imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
 }
