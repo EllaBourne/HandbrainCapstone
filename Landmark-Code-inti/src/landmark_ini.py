@@ -139,6 +139,10 @@ with mp_pose.Pose(min_detection_confidence=0.3, min_tracking_confidence=0.1) as 
             # Make sure to change the relative path to the correct position data.
             path = "C:/Users/nicho/Capstone G16 3DCV Demo/Assets/StreamingAssets/position_data.json"
             json_obj = {
+                "windowInformation":{
+                    "w":w,
+                    "h":h
+                },
                 "headPosition":{
                     "x":head[0],
                     "y":h - head[1],
