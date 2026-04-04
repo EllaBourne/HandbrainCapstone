@@ -26,7 +26,14 @@ def angle_3pt(a,b,c):
     return angle_between(a-b,c-b)
 
 # Start opencv video capture
-cap = cv2.VideoCapture(0)
+print("Enter 0 for internal webcam, 1 for external:")
+x = -1
+while (x != 1 and x != 0):
+    x = int(input())
+    if (x != 1 and x != 0):
+        print("Invalid! Type 0 or 1 to continue:")
+
+cap = cv2.VideoCapture(x)
 # Set capture settings
 print("Width: "+str(cap.get(cv2.CAP_PROP_FRAME_WIDTH))+", Height: "+str(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))+"\n")
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
@@ -137,7 +144,11 @@ with mp_pose.Pose(min_detection_confidence=0.3, min_tracking_confidence=0.1) as 
             
             # Covnert to JSON string
             # Make sure to change the relative path to the correct position data.
-            path = "C:/Users/nicho/Capstone G16 3DCV Demo/Assets/StreamingAssets/position_data.json"
+
+            # Path to Unity Project Directory
+            path = "C:/Users/nicho/Unity Projects/Capstone G16 3DCV Demo/Assets/StreamingAssets/position_data.json"
+            # Path to Test Build for Video
+            # path = "C:/Users/nicho/Unity Projects/Capstone G16 3DCV Demo/Builds/VideoDemoBuild/Capstone G16 3DCV Demo_Data/StreamingAssets/position_data.json"
             json_obj = {
                 "windowInformation":{
                     "w":w,
