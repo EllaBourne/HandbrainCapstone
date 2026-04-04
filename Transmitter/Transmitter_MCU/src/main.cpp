@@ -39,15 +39,19 @@ void loop() {
 #include <Arduino.h>
 #include <Wire.h>
 #include "I2C_MPU6886.h"
+#include "driver/gpio.h"
 
 //pins defiend for the pico
-#define SDA_PIN 26 //I2C serial)
+#define SDA_PIN 26 //I2C serial
 #define SCL_PIN 32 //I2C clock
+
+#define GET_MAC 0 // flag to output MAC for this device
 
 I2C_MPU6886 imu(I2C_MPU6886_DEFAULT_ADDRESS, Wire); //imu object
 
 
 // receiver mac address
+// TODO: replace this when we get the new controllers
 uint8_t broadcastAddress[] = {0xD4, 0xD4, 0xDA, 0x98, 0x0D, 0xFC};
 
 typedef struct imuReadings {
@@ -55,14 +59,29 @@ typedef struct imuReadings {
     float gyr_x, gyr_y, gyr_z;
 } imuReadings;
 
-imuReadings imuData; //new variable of type imuReadings
+typedef struct buttonValues {
+    bool button_1, button_2, button_3, button_4;
+} buttonValues;
+
+typedef struct unityPacket {
+    imuReadings imuData;
+    buttonValues buttonData;
+} unityPacket;
+
+unityPacket unityData; //new variable of type unityPacket, contains imuReadings and buttonValues
+// imuReadings imuData; //new variable of type imuReadings
+// buttonValues buttonData;
 
 esp_now_peer_info_t peerInfo; //espnow connection info object (?)
 
 // callback when data is sent,autoruns after each transmission to say if successful or not
 void sentStatus(const uint8_t *mac_addr, esp_now_send_status_t status) {
-    Serial.print("\r\nLast Packet Send Status:\t");
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+    if (status != ESP_NOW_SEND_SUCCESS) {
+        Serial.println("Last Packet Send Status: Delivery Fail");
+    } else {
+        // Serial.print("\r\nLast Packet Send Status:\t");
+        // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+    }
 }
  
 void setup() {
@@ -72,6 +91,12 @@ void setup() {
     imu.begin();
  
     WiFi.mode(WIFI_STA); //set device as wifi station 
+
+    // Configure Push Buttons as GPIO inputs
+    gpio_set_direction(GPIO_NUM_22, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_23, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_33, GPIO_MODE_INPUT);
 
     //initialize espnow
     if (esp_now_init() != ESP_OK) { //start protocol, if not successfull, print error
@@ -98,24 +123,34 @@ void setup() {
  
 void loop() {
     //reading imu data from sensor 
-    imu.getAccel(&imuData.acc_x, &imuData.acc_y, &imuData.acc_z);
-    imu.getGyro(&imuData.gyr_x, &imuData.gyr_y, &imuData.gyr_z);
-  
+    imu.getAccel(&unityData.imuData.acc_x, &unityData.imuData.acc_y, &unityData.imuData.acc_z);
+    imu.getGyro(&unityData.imuData.gyr_x, &unityData.imuData.gyr_y, &unityData.imuData.gyr_z);
+
+    // update unityData.buttonData values with proper code
+    unityData.buttonData.button_1 = gpio_get_level(GPIO_NUM_22);
+    unityData.buttonData.button_2 = gpio_get_level(GPIO_NUM_19);
+    unityData.buttonData.button_3 = gpio_get_level(GPIO_NUM_23);
+    unityData.buttonData.button_4 = gpio_get_level(GPIO_NUM_33);
+
     /*//for debugging
     Serial.printf("Acc: %.2f, %.2f, %.2f , Gyro: %.2f, %.2f, %.2f\n",
             imuData.acc_x, imuData.acc_y, imuData.acc_z,
             imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
+    
+    Serial.printf("B1: %d, B2: %d, B3: %d, B4: %d\r\n",
+            gpio_get_level(GPIO_NUM_22), gpio_get_level(GPIO_NUM_19),
+            gpio_get_level(GPIO_NUM_23), gpio_get_level(GPIO_NUM_33));
     */
   
-  // using espnow send function
-  //esp_err_t = data type for ESP error
-  //uint8_t * esnures sending as raw bytes
-  esp_err_t status = esp_now_send(broadcastAddress, (uint8_t *) &imuData, sizeof(imuData));
-  if (status == ESP_OK) {
-    Serial.println("Sent with success");
-  }
-  else {
-    Serial.println("Error sending the data");
-  }
-  delay(70);
+    // using espnow send function
+    //esp_err_t = data type for ESP error
+    //uint8_t * esnures sending as raw bytes
+    esp_err_t status = esp_now_send(broadcastAddress, (uint8_t *) &unityData, sizeof(unityData));
+    if (status == ESP_OK) {
+        //Serial.println("Sent with success");
+    }
+    else {
+        Serial.println("Error sending the data!");
+    }
+    delay(70);
 }
