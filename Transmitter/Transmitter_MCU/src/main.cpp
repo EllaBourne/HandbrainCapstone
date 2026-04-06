@@ -41,18 +41,24 @@ void loop() {
 #include "I2C_MPU6886.h"
 #include "driver/gpio.h"
 
+
 //pins defiend for the pico
-#define SDA_PIN 26 //I2C serial
-#define SCL_PIN 32 //I2C clock
+// #define SDA_PIN 26 //I2C serial
+// #define SCL_PIN 32 //I2C clock
+
+//pins defiend for the ESP32-C3
+#define SDA_PIN 0 //I2C serial
+#define SCL_PIN 1 //I2C clock
+#define FREQUENCY 200000 // I2C Speed
 
 #define GET_MAC 0 // flag to output MAC for this device
 
-I2C_MPU6886 imu(I2C_MPU6886_DEFAULT_ADDRESS, Wire); //imu object
+//I2C_MPU6886 imu(I2C_MPU6886_DEFAULT_ADDRESS, Wire); //imu object
 
 
 // receiver mac address
 // TODO: replace this when we get the new controllers
-uint8_t broadcastAddress[] = {0xD4, 0xD4, 0xDA, 0x98, 0x0D, 0xFC};
+uint8_t broadcastAddress[] = {0xD4, 0xD4, 0xDA, 0x83, 0x95, 0x08};
 
 typedef struct imuReadings {
     float acc_x,acc_y, acc_z;
@@ -83,20 +89,49 @@ void sentStatus(const uint8_t *mac_addr, esp_now_send_status_t status) {
         // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
     }
 }
+
+void setupBMI() {
+    // Set up the BMI330 IMU device.
+
+    // Check that chip ID matches
+    Wire.beginTransmission(0x00);
+    // byte LSB = Wire.read();
+    // byte MSB = Wire.read();
+    // if (LSB == 0x48) {
+    //     Serial.println("LSB is what we want!");
+    // } else if (MSB == 0x48) {
+    //     Serial.println("MSB is what we want!");
+    // } else {
+    //     Serial.println("Uh Oh.");
+    // }
+}
+
+imuReadings readAccelGyro() {
+    // Read from the X, Y and Z components of the Gyroscope
+    imuReadings accel_gyro = { 0 }; 
+
+    return accel_gyro;
+}
  
 void setup() {
     
     Serial.begin(115200);
-    Wire.begin(SDA_PIN, SCL_PIN);
-    imu.begin();
+    Serial.printf("Serial Begin!\r\n");
+    if(Wire.begin(SDA_PIN, SCL_PIN, FREQUENCY)) {
+        Serial.println("Successful Wire Connection!");
+    }
+    //imu.begin();
+
+    // Initialize BMI330
+    //setupBMI();
  
     WiFi.mode(WIFI_STA); //set device as wifi station 
 
     // Configure Push Buttons as GPIO inputs
-    gpio_set_direction(GPIO_NUM_22, GPIO_MODE_INPUT);
-    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT);
-    gpio_set_direction(GPIO_NUM_23, GPIO_MODE_INPUT);
-    gpio_set_direction(GPIO_NUM_33, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_4, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_6, GPIO_MODE_INPUT);
+    gpio_set_direction(GPIO_NUM_7, GPIO_MODE_INPUT);
 
     //initialize espnow
     if (esp_now_init() != ESP_OK) { //start protocol, if not successfull, print error
@@ -123,23 +158,31 @@ void setup() {
  
 void loop() {
     //reading imu data from sensor 
-    imu.getAccel(&unityData.imuData.acc_x, &unityData.imuData.acc_y, &unityData.imuData.acc_z);
-    imu.getGyro(&unityData.imuData.gyr_x, &unityData.imuData.gyr_y, &unityData.imuData.gyr_z);
+    //imu.getAccel(&unityData.imuData.acc_x, &unityData.imuData.acc_y, &unityData.imuData.acc_z);
+    //imu.getGyro(&unityData.imuData.gyr_x, &unityData.imuData.gyr_y, &unityData.imuData.gyr_z);
+    Wire.requestFrom(0x00,2);
+
+    unityData.imuData.acc_x = 0.0f;
+    unityData.imuData.acc_y = 0.0f;
+    unityData.imuData.acc_z = 0.0f;
+    unityData.imuData.gyr_x = 0.0f;
+    unityData.imuData.gyr_y = 0.0f;
+    unityData.imuData.gyr_z = 0.0f;
 
     // update unityData.buttonData values with proper code
-    unityData.buttonData.button_1 = gpio_get_level(GPIO_NUM_22);
-    unityData.buttonData.button_2 = gpio_get_level(GPIO_NUM_19);
-    unityData.buttonData.button_3 = gpio_get_level(GPIO_NUM_23);
-    unityData.buttonData.button_4 = gpio_get_level(GPIO_NUM_33);
+    unityData.buttonData.button_1 = gpio_get_level(GPIO_NUM_4);
+    unityData.buttonData.button_2 = gpio_get_level(GPIO_NUM_5);
+    unityData.buttonData.button_3 = gpio_get_level(GPIO_NUM_6);
+    unityData.buttonData.button_4 = gpio_get_level(GPIO_NUM_7);
 
     /*//for debugging
     Serial.printf("Acc: %.2f, %.2f, %.2f , Gyro: %.2f, %.2f, %.2f\n",
             imuData.acc_x, imuData.acc_y, imuData.acc_z,
             imuData.gyr_x, imuData.gyr_y, imuData.gyr_z);
-    
+
     Serial.printf("B1: %d, B2: %d, B3: %d, B4: %d\r\n",
-            gpio_get_level(GPIO_NUM_22), gpio_get_level(GPIO_NUM_19),
-            gpio_get_level(GPIO_NUM_23), gpio_get_level(GPIO_NUM_33));
+            gpio_get_level(GPIO_NUM_4), gpio_get_level(GPIO_NUM_5),
+            gpio_get_level(GPIO_NUM_6), gpio_get_level(GPIO_NUM_7));
     */
   
     // using espnow send function
